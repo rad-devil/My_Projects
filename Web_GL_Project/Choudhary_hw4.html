@@ -1,0 +1,310 @@
+<html>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+precision highp float;
+attribute vec3 vPosition;
+attribute vec3 vNormal;
+varying vec3 N, L, E;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform vec4 lightPosition;
+attribute  vec2 vTexCoord;
+varying vec2 fTexCoord;
+
+void main()
+{
+
+	vec4 pos4D = vec4(vPosition, 1.0);
+	vec4 nor4D = vec4(vNormal, 0.0); 
+	
+	vec3 pos = (modelViewMatrix * pos4D).xyz;
+	
+    vec3 light = lightPosition.xyz;
+    L = normalize( light - pos );
+	
+	vec3 eyePoint = vec3(0.0, 0.0, 0.0);
+	vec3 E = normalize( eyePoint - pos );
+   
+    N = normalize( (modelViewMatrix*nor4D).xyz); 
+    
+    gl_Position = projectionMatrix * modelViewMatrix * pos4D;
+    fTexCoord = vTexCoord;
+	
+    
+}
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+
+  precision mediump float;
+
+  uniform vec4 ambientProduct;
+  uniform vec4 diffuseProduct;
+  uniform vec4 specularProduct;
+  uniform float shininess;
+  varying vec3 N, L, E;
+  varying  vec2 fTexCoord;
+  uniform sampler2D texture;
+  
+  void main()
+  {    
+      vec4 fColor;
+      
+      vec3 H = normalize( L + E );
+      vec4 ambient = ambientProduct;
+  
+      float Kd = max( dot(L, N), 0.0 );
+      vec4  diffuse = Kd*diffuseProduct;
+  
+      float Ks = pow( max(dot(N, H), 0.0), shininess );
+      vec4  specular = Ks * specularProduct;
+      
+      if( dot(L, N) < 0.0 ) specular = vec4(0.0, 0.0, 0.0, 1.0);
+  
+      fColor = ambient + diffuse +specular; 
+      fColor.a = 1.0;
+      gl_FragColor = fColor*texture2D( texture, fTexCoord );
+  
+  }
+</script>
+
+<script id="vertex-shader2" type="x-shader/x-vertex">
+    precision highp float;
+attribute vec4 vPosition;
+
+uniform vec4 normal;
+uniform mat3 normalMatrix;
+uniform vec3 objTangent;
+varying vec3 N, L, E, B,T;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+uniform vec4 lightPosition;
+attribute  vec2 vTexCoord2;
+varying vec2 fTexCoord;
+
+void main()
+{
+
+	vec4 pos4D = vPosition;
+	
+	
+	vec3 pos = (modelViewMatrix * pos4D).xyz;
+	
+    vec3 light = lightPosition.xyz;
+    L = normalize( light - pos );
+	
+	vec3 eyePoint = vec3(0.0, 0.0, 0.0);
+	vec3 E = normalize( eyePoint - pos );
+    T  = normalize(normalMatrix*objTangent);
+   
+    N = normalize(normalMatrix*normal.xyz);
+    B = cross(N, T);
+    
+    gl_Position = projectionMatrix * modelViewMatrix * pos4D;
+    fTexCoord = vTexCoord2;
+	
+    
+}
+
+    /*
+  precision highp float;
+  attribute  vec4 vPosition;
+  attribute  vec4 vColor;
+  varying vec4 fColor;
+  
+  // uniform vec3 theta;
+  
+  uniform mat4 modelViewMatrix;
+  uniform mat4 projectionMatrix;
+  
+  void main() 
+  {   
+      vec4 pos4D = vPosition;
+      fColor = vec4(0.0, 0.0, 1.0, 1.0);  //blue by default
+      fColor.a = 1.0; 
+      gl_Position = projectionMatrix*modelViewMatrix*pos4D ;
+  } 
+  */
+  </script>
+
+  <script id="fragment-shader2" type="x-shader/x-fragment">
+    precision mediump float;
+
+    uniform vec4 ambientProduct;
+    uniform vec4 diffuseProduct;
+    uniform vec4 specularProduct;
+    uniform float shininess;
+    varying vec3 N, L, E, B, T;
+    varying  vec2 fTexCoord;
+    uniform sampler2D texture;
+    
+    void main()
+    {    
+        vec4 fColor;
+        vec4 Nmap = texture2D(texture, fTexCoord);
+   
+        // get normal out of texture definition
+        // scale and translate components from [0,1] to [-1,1]
+        vec3 NN =  normalize(2.0*Nmap.xyz-1.0);
+        
+        vec3 TT = normalize(T);
+        vec3 BB = normalize(B);
+        vec3 NNN = normalize(N);
+        
+        vec3 No;
+        No.x = TT.x * NN.x + BB.x * NN.y + NNN.x * NN.z;
+        No.y = TT.y * NN.x + BB.y * NN.y + NNN.y * NN.z;
+        No.z = TT.z * NN.x + BB.z * NN.y + NNN.z * NN.z;
+        
+        
+        vec3 H = normalize( L + E );
+        vec4 ambient = ambientProduct;
+    
+        float Kd = max( dot(L, No), 0.0 );
+        vec4  diffuse = Kd*diffuseProduct;
+    
+        float Ks = pow( max(dot(No, H), 0.0), shininess );
+        vec4  specular = Ks * specularProduct;
+        
+        if( dot(L, No) < 0.0 ) specular = vec4(0.0, 0.0, 0.0, 1.0);
+    
+        fColor = ambient + diffuse +specular; 
+        fColor.a = 1.0;
+        gl_FragColor = fColor;
+        // Try this as well gl_FragColor = fColor;
+    
+    }
+    /*
+
+    precision mediump float;
+    varying vec4 fColor;
+    
+    void
+    main()
+    {
+        gl_FragColor = fColor;
+    }
+    */
+    </script>
+
+
+
+
+<script type="text/javascript" src="Common/webgl-utils.js"></script>
+<script type="text/javascript" src="Common/initShaders.js"></script>
+<script type="text/javascript" src="Common/MV.js"></script>
+<script type="text/javascript" src="Choudhary_hw4.js"></script>
+<script type="text/javascript" src="mouseControl.js"></script>
+<script type="text/javascript" src="computerCiruit.jpg..js"></script>
+<script type="text/javascript" src="bumpData_diamond.js"></script>
+<script type="text/javascript" src="matrixMethods.js"></script>
+
+
+
+
+
+
+<head>
+  <h1> Texture Map Fun</h1>
+  <style>
+
+    h1 {
+        position: absolute;
+        right: 500;
+        top: 10px;
+    }
+
+    #description {
+      position: absolute;
+      right: 180;
+      top: 100px;
+      margin: 0;
+      overflow: hidden; /* Hide horizontal scrollbar if needed */   
+    }
+
+    canvas {
+      display: block;   
+      background-color: #f0f0f0;
+    }
+
+    
+
+   
+
+    /* Style elements to be positioned to the right */
+    #controls {
+      position: absolute;
+      right: 520;
+      top: 650px; /* Adjust the top position as needed */
+      background-color: lightblue;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gl-canvas" width="512" height="512" >
+Oops ... your browser doesn't support the HTML5 canvas element
+</canvas>
+   
+<br/>
+
+
+
+
+<div class="slidecontainer" id = "controls">
+    <button id= "cylinder">cylinder</button>
+    <button id= "sinusodial">sinusodial object</button>
+    <button id= "material1">ColorSplash</button>
+    <button id= "material2">Red Glow Circuit</button>
+    <button id= "static_light">Static Light</button>
+    <button id= "moving_light">Moving Light</button>
+    <button id= "dance">Sinusodial Dance</button>
+    <button id= "stop_dance">Stop Dance</button>
+
+    <br>
+    Change Shininess 1
+    <input type="range" min="1" max="1000" value="10" step="10" class="slider" id="shine">
+    1000<br> 
+
+    Change FOV 10 
+    <input type="range" min="10" max="100" value="60" step="10" class="slider" id="fov">
+    100
+  </div>
+
+  <div class="Description" id = "description">
+	<!--HW470: Add text to communicate what program does -->
+	
+	
+	<strong>Author: </strong>Radhesh Choudhary &nbsp;&nbsp;
+	      
+	<strong> Date: </strong>Apr 2024</br>
+	
+	</br>
+	<strong>Description: </strong></br>This program demonstorates phong shading with texture and normal mapping. </br> The bronze 2d surface that the 3d object is on, is pertubated through Normal Mapping </br>  The surface texture is mapped with a 2d image.
+
+	</br>
+    </br>
+	<strong>Functionality</strong></br>
+
+	Changing normal based on displacement function for normal mapping . </br>Implemented Phong Shading with the normal map and the texture map  </br>with two different textures.<b>ColorSplash (custome made)</b>.  and <b>Red Glow Circuit (imported image)</b> 
+    </br>
+    </br>   
+    <strong>Extra Functionality</strong></br>
+   Implemented Phong Shading for the normal mapped surface as well</b>
+    </br>
+	</br>
+	<strong>Resources: </strong>Prof. Angel's codes. (HW470: W3 school HTML elements and how to make event handlers)</br>
+	</br>
+	</div>
+	
+	
+	
+</div>
+
+
+
+
+
+</body>
+</html>
